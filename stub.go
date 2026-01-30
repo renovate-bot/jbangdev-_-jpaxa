@@ -99,7 +99,9 @@ func main() {
 
 			// The use of ‘Repeat’ below is to make it even more improbable that the separator will appear literally in the compiled stub.
 			archiveSeparator := []byte("\n" + strings.Repeat("CAXA", 3) + "\n")
-			archiveIndex := bytes.Index(executable, archiveSeparator)
+			// Use LastIndex to ensure we find the separator appended at the end of the stub,
+			// not an earlier accidental occurrence inside the compiled binary.
+			archiveIndex := bytes.LastIndex(executable, archiveSeparator)
 			if archiveIndex == -1 {
 				log.Fatalf("caxa stub: Failed to find archive (did you append the separator when building the stub?): %v", err)
 			}
