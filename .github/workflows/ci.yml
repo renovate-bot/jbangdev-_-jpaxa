@@ -58,20 +58,53 @@ jobs:
             test -f "dist/hello--stub--${v}"
           done
 
-      - name: Run Linux x64 packaged app
+          - name: setup jpackxa exec
+          run: |
+            mkdir examples/jpackxa-exec
+            cd examples/jpackxa-exec
+            jbang wrapper install
+            # export jpackxa.java with the stubs included
+            jbang export fatjar --files=stubs/=../../stubs --force ../../jpackxa.java
+            ls -la 
+  
+      - name: Package jpackxa
         shell: bash
         run: |
           set -euo pipefail
-          out="$(./dist/hello--stub--linux--x64 CI)"
-          echo "$out"
-          echo "$out" | grep -F "Hello from packaged Java application!"
-          echo "$out" | grep -F "Arguments: CI"
+          rm -rf dist
+          mkdir -p dist
 
+          jbang ./jpackxa.java \
+            examples/jpackxa-exec \
+            --directory jpackxa-exec-dist \
+            --output jpackxa-exec \
+            --variants win32--x64 \
+            --variants darwin--x64 \
+            --variants darwin--arm64 \
+            --variants linux--x64 \
+            --variants linux--arm64 \
+            --variants linux--arm \
+            -- "{{app}}/jbang"
+            
       - name: Upload stubs artifact
         uses: actions/upload-artifact@v4
         with:
           name: stubs
           path: stubs/
+          if-no-files-found: error
+
+      - name: Upload hello artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello
+          path: dist/
+          if-no-files-found: error
+
+      - name: Upload jpackxa-exec artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpackxa-exec
+          path: jpackxa-exec-dist/
           if-no-files-found: error
 
   platform-matrix:
@@ -131,23 +164,7 @@ jobs:
           name: stubs
           path: stubs
 
-      - name: Compile example
-        working-directory: examples/simple-java
-        run: javac Hello.java
-
-      - name: Package example
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf dist
-          mkdir -p dist
-
-          jbang ./jpackxa.java \
-            examples/simple-java \
-            --directory dist \
-            --output "${{ matrix.output }}" \
-            --variants "${{ matrix.variant }}" \
-            -- "java" "-cp" "{{app}}" "Hello"
+      
 
       - name: Run packaged app (unix)
         if: runner.os != 'Windows'
