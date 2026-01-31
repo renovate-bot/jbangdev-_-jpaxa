@@ -169,7 +169,11 @@ jobs:
           name: hello
           path: dist/
 
-      
+      - name: make executable executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x dist/hello--stub--${{ matrix.variant }}
 
       - name: Run packaged app (unix)
         if: runner.os != 'Windows'
