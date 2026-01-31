@@ -211,8 +211,9 @@ jobs:
           tar -xzf hello-dist.tgz
           $exe = "dist\hello--stub--win32--x64.exe"
           if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
-          $out = & $exe CI
-          Write-Host $out
-          if ($out -notmatch "Hello from packaged Java application!") { throw "Missing expected greeting" }
-          if ($out -notmatch "Arguments: CI") { throw "Missing expected arguments line" }
+          $outLines = & $exe CI
+          $outText = ($outLines -join "`n")
+          Write-Host $outText
+          if ($outText -notmatch "Hello from packaged Java application!") { throw "Missing expected greeting" }
+          if ($outText -notmatch "Arguments: CI") { throw "Missing expected arguments line" }
 
