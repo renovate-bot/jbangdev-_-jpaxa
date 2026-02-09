@@ -59,21 +59,16 @@ jobs:
           # Compile the example as part of the build (don't rely on a prebuilt class file)
           javac examples/simple-java/Hello.java
 
-          jbang ./jpackxa.java \
+          jbang ./jpaxa.java \
             examples/simple-java \
             --directory dist \
             --output hello \
-            --variants win32--x64 \
-            --variants darwin--x64 \
-            --variants darwin--arm64 \
-            --variants linux--x64 \
-            --variants linux--arm64 \
-            --variants linux--arm \
+            --variants
             -- "java" "-cp" "{{app}}" "Hello"
 
-          test -f "dist/hello--stub--win32--x64.exe"
-          for v in darwin--x64 darwin--arm64 linux--x64 linux--arm64 linux--arm; do
-            test -f "dist/hello--stub--${v}"
+          test -f "dist/hello--win32-x64.exe"
+          for v in darwin-x64 darwin-arm64 linux-x64 linux-arm64 linux-arm; do
+            test -f "dist/hello--${v}"
           done
 
           ls -la dist
@@ -87,43 +82,43 @@ jobs:
           path: hello-dist.tgz
           if-no-files-found: error
 
-      - name: setup jpackxa exec
+      - name: setup jpaxa exec
         shell: bash
         run: |
           set -euo pipefail
-          mkdir examples/jpackxa-exec
-          cd examples/jpackxa-exec
+          mkdir examples/jpaxa-exec
+          cd examples/jpaxa-exec
           jbang wrapper install
-          # export jpackxa.java with the stubs included
-          jbang export fatjar --files=stubs/=../../stubs --force ../../jpackxa.java
+          # export jpaxa.java with the stubs included
+          jbang export fatjar --files=stubs/=../../stubs --force ../../jpaxa.java
           ls -la 
   
-      - name: Package jpackxa
+      - name: Package jpaxa
         shell: bash
         run: |
           set -euo pipefail
           rm -rf dist
           mkdir -p dist
 
-          jbang ./jpackxa.java \
-            examples/jpackxa-exec \
-            --directory jpackxa-exec-dist \
-            --output jpackxa-exec \
-            --variants win32--x64 \
-            --variants darwin--x64 \
-            --variants darwin--arm64 \
-            --variants linux--x64 \
-            --variants linux--arm64 \
-            --variants linux--arm \
+          jbang ./jpaxa.java \
+            examples/jpaxa-exec \
+            --directory jpaxa-exec-dist \
+            --output jpaxa-exec \
+            --variants win32-x64 \
+            --variants darwin-x64 \
+            --variants darwin-arm64 \
+            --variants linux-x64 \
+            --variants linux-arm64 \
+            --variants linux-arm \
             -- "{{app}}/jbang"
 
-          tar -czf jpackxa-exec-dist.tgz jpackxa-exec-dist
+          tar -czf jpaxa-exec-dist.tgz jpaxa-exec-dist
 
-      - name: Upload jpackxa-exec artifact
+      - name: Upload jpaxa-exec artifact
         uses: actions/upload-artifact@v4
         with:
-          name: jpackxa-exec
-          path: jpackxa-exec-dist.tgz
+          name: jpaxa-exec
+          path: jpaxa-exec-dist.tgz
           if-no-files-found: error
 
   platform-matrix:
@@ -136,33 +131,33 @@ jobs:
         include:
           - name: linux-x64
             runs_on: ubuntu-latest
-            variant: linux--x64
+            variant: linux-x64
             output: hello
-            run_cmd: ./dist/hello--stub--linux--x64 CI
+            run_cmd: ./dist/hello-linux-x64 CI
 
           # Hosted arm64 runners are not available in all orgs. If this fails to schedule,
           # remove this entry.
           #- name: linux-arm64
           #  runs_on: ubuntu-24.04-arm64
-          #  variant: linux--arm64
+          #  variant: linux-arm64
           #  output: hello
-          #  run_cmd: ./dist/hello--stub--linux--arm64 CI
+          #  run_cmd: ./dist/hello-linux-arm64 CI
 
           - name: macos-x64
             runs_on: macos-15-intel
-            variant: darwin--x64
+            variant: darwin-x64
             output: hello
-            run_cmd: ./dist/hello--stub--darwin--x64 CI
+            run_cmd: ./dist/hello-darwin-x64 CI
 
           - name: macos-arm64
             runs_on: macos-latest
-            variant: darwin--arm64
+            variant: darwin-arm64
             output: hello
-            run_cmd: ./dist/hello--stub--darwin--arm64 CI
+            run_cmd: ./dist/hello-darwin-arm64 CI
 
           - name: windows-x64
             runs_on: windows-latest
-            variant: win32--x64
+            variant: win32-x64
             output: hello.exe
 
     steps:
@@ -196,7 +191,7 @@ jobs:
           set -euo pipefail
           tar -xzf stubs.tgz
           tar -xzf hello-dist.tgz
-          chmod +x dist/hello--stub--${{ matrix.variant }} || true
+          chmod +x dist/hello-${{ matrix.variant }} || true
           out="$(${{ matrix.run_cmd }})"
           echo "$out"
           echo "$out" | grep -F "Hello from packaged Java application!"
@@ -209,7 +204,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           tar -xzf stubs.tgz
           tar -xzf hello-dist.tgz
-          $exe = "dist\hello--stub--win32--x64.exe"
+          $exe = "dist\hello--win32-x64.exe"
           if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
           $outLines = & $exe CI
           $outText = ($outLines -join "`n")

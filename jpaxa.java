@@ -27,16 +27,16 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import com.google.gson.Gson;
 
-@Command(name = "jpackxa", description = "Package applications into executable binaries", mixinStandardHelpOptions = true)
-public class jpackxa implements Runnable {
+@Command(name = "jpaxa", description = "Package applications into executable binaries", mixinStandardHelpOptions = true)
+public class jpaxa implements Runnable {
     
     @Parameters(index = "0", arity = "1", description = "The input directory to package")
     private Path input;
     
-    @Option(names = {"-o", "--output"}, required = true, description = "The path where the executable will be produced, if relative will be relative to the build directory")
+    @Option(names = {"-o", "--output"}, description = "The name of the executable to be produced, if relative will be relative to the build directory")
     private Path output;
 
-    @Option(names = {"-d", "--directory"}, description = "The path where the executable will be produced", defaultValue = "jpackxa-output")
+    @Option(names = {"-d", "--directory"}, description = "The path where the executable will be produced", defaultValue = "jpaxa-output")
     private Path build;
 
     
@@ -61,8 +61,8 @@ public class jpackxa implements Runnable {
     @Option(names = {"-m", "--message"}, description = "A message to show when uncompressing")
     private String uncompressionMessage;
 
-    @Option(names = {"--variants"}, description = "Variants to build, will default to current platform and architecture if not provided")
-    private List<String> variants = new ArrayList<>();
+    @Option(names = {"--variants"}, arity = "0..*", description = "Variants to build, will default to current platform and architecture if not provided. If called without values, builds all known variants.")
+    private List<String> variants;
     
     @Option(names = {"--verbose"}, description = "Verbose output")
     private boolean verbose = false;
@@ -73,7 +73,7 @@ public class jpackxa implements Runnable {
     private static final Pattern APP_PLACEHOLDER = Pattern.compile("\\{\\{\\s*app\\s*\\}\\}");
     
     public static void main(String[] args) {
-        System.exit(new CommandLine(new jpackxa()).execute(args));
+        System.exit(new CommandLine(new jpaxa()).execute(args));
     }
     
     @Override
@@ -91,9 +91,9 @@ public class jpackxa implements Runnable {
         return path.getFileName().toString().endsWith(suffix);
     }
 
-    private boolean isWindowsVariantStub(String stubName) {
-        // stubName is like "stub--win32--x64"
-        return stubName.startsWith("stub--win32--");
+    private boolean isWindowsVariantStub(String variant) {
+        // variant is like "win32-x64"
+        return variant.startsWith("win32-");
     }
 
     private String stripExeSuffix(String path) {
@@ -101,6 +101,13 @@ public class jpackxa implements Runnable {
     }
 
     private void packageApplication() throws Exception {
+        if (variants == null) {  // If no variants were provided, build the current platform and architecture
+            String stubName = getPlatform() + "-" + getArchitecture();
+            variants = Arrays.asList(stubName);
+        } else if(variants.isEmpty()) { // If --variants was provided with values, build all known variants
+            variants = new ArrayList<>(getKnownVariants().keySet());
+        }
+        
         // Validate input
         if (!exists(input) || !isDirectory(input)) {
             throw new IllegalArgumentException("Input isn't a directory: " + input);
@@ -110,6 +117,10 @@ public class jpackxa implements Runnable {
         String osName = System.getProperty("os.name").toLowerCase();
         boolean isWindows = osName.contains("win");
         
+        if(output == null) {
+            output = Path.of(input.getFileName().toString());
+        }
+
         output = build.resolve(output);
         
         if (exists(output) && !force) {
@@ -119,7 +130,7 @@ public class jpackxa implements Runnable {
         }
         
         // Create build directory
-        Path buildDir = Files.createTempDirectory("jpackxa-");
+        Path buildDir = Files.createTempDirectory("jpaxa-");
         try {
             // Copy input to build directory
             copyDirectory(input, buildDir, exclude);
@@ -164,15 +175,11 @@ public class jpackxa implements Runnable {
                 return;
             }
             
-            if(variants.isEmpty()) {
-                String stubName = "stub--" + getPlatform() + "--" + getArchitecture();
-                // Handle regular binary stub
-                createBinaryStub(buildDir, isWindows, stubName);
-            } else {
-                for (String variant : variants) {
-                    createBinaryStub(buildDir, isWindows, "stub--" + variant);
-                }
+            
+            for (String variant : variants) {
+                   createBinaryStub(buildDir, isWindows, variant);
             }
+            
             
         } finally {
             if (!noRemoveBuildDirectory) {
@@ -183,28 +190,28 @@ public class jpackxa implements Runnable {
         }
     }
     
-    private void createBinaryStub(Path buildDir, boolean isWindows, String stubName) throws Exception {
+    private void createBinaryStub(Path buildDir, boolean isWindows, String variant) throws Exception {
        
         String baseOutputPath = output.toString();
         // For Windows variants, ensure the produced filename ends with ".exe" so it is directly runnable on Windows.
         // We put ".exe" at the end (after the variant suffix), because Windows requires the extension at the end.
         String outputPath;
-        if (isWindowsVariantStub(stubName)) {
+        if (isWindowsVariantStub(variant)) {
             baseOutputPath = stripExeSuffix(baseOutputPath);
-            outputPath = baseOutputPath + "--" + stubName + ".exe";
+            outputPath = baseOutputPath + "-" + variant + ".exe";
         } else {
-            outputPath = baseOutputPath + "--" + stubName;
+            outputPath = baseOutputPath + "-" + variant;
         }
         Path stubPath;
         if (stub != null) {
             stubPath = stub;
         } else {
             // Try to find stub in resources or current directory
-            stubPath = findStub(stubName);
+            stubPath = findStub(variant);
             if (stubPath == null) {
                 throw new IllegalArgumentException(
-                    "Stub not found (your operating system / architecture may be unsupported): " + stubName +
-                    "\nYou can compile stubs with: go build -o " + stubName + " <path-to-stub.go>"
+                    "Stub not found (your operating system / architecture may be unsupported): " + variant +
+                    "\nYou can compile stubs with: go build -o " + variant + " <path-to-stub.go>"
                 );
             }
         }
@@ -254,6 +261,8 @@ public class jpackxa implements Runnable {
             System.out.println("Footer JSON: " + footerJson);
         }
         writeString(Path.of(outputPath), "\n" + footerJson, StandardOpenOption.APPEND);
+
+        System.out.println("Created binary: " + outputPath);
     }
     
     private void createShellStub(Path buildDir) throws Exception {
@@ -266,16 +275,16 @@ public class jpackxa implements Runnable {
         // Generate shell stub script
         String stubScript = """
             #!/usr/bin/env sh
-            export JPACKXA_TEMPORARY_DIRECTORY="$(dirname $(mktemp))/jpackxa"
-            export JPACKXA_EXTRACTION_ATTEMPT=-1
+            export jpaxa_TEMPORARY_DIRECTORY="$(dirname $(mktemp))/jpaxa"
+            export jpaxa_EXTRACTION_ATTEMPT=-1
             while true
             do
-              export JPACKXA_EXTRACTION_ATTEMPT=$(( JPACKXA_EXTRACTION_ATTEMPT + 1 ))
-              export JPACKXA_LOCK="$JPACKXA_TEMPORARY_DIRECTORY/locks/%s/$JPACKXA_EXTRACTION_ATTEMPT"
-              export JPACKXA_APPLICATION_DIRECTORY="$JPACKXA_TEMPORARY_DIRECTORY/applications/%s/$JPACKXA_EXTRACTION_ATTEMPT"
-              if [ -d "$JPACKXA_APPLICATION_DIRECTORY" ] 
+              export jpaxa_EXTRACTION_ATTEMPT=$(( jpaxa_EXTRACTION_ATTEMPT + 1 ))
+              export jpaxa_LOCK="$jpaxa_TEMPORARY_DIRECTORY/locks/%s/$jpaxa_EXTRACTION_ATTEMPT"
+              export jpaxa_APPLICATION_DIRECTORY="$jpaxa_TEMPORARY_DIRECTORY/applications/%s/$jpaxa_EXTRACTION_ATTEMPT"
+              if [ -d "$jpaxa_APPLICATION_DIRECTORY" ] 
               then
-                if [ -d "$JPACKXA_LOCK" ] 
+                if [ -d "$jpaxa_LOCK" ] 
                 then
                   continue
                 else
@@ -287,17 +296,17 @@ public class jpackxa implements Runnable {
             stubScript += "    echo \"%s\" >&2\n".formatted(uncompressionMessage);
         }
         stubScript += """
-            mkdir -p "$JPACKXA_LOCK"
-            mkdir -p "$JPACKXA_APPLICATION_DIRECTORY"
-            tail -n+__STUB_LINES__ "$0" | tar -xz -C "$JPACKXA_APPLICATION_DIRECTORY"
-            rmdir "$JPACKXA_LOCK"
+            mkdir -p "$jpaxa_LOCK"
+            mkdir -p "$jpaxa_APPLICATION_DIRECTORY"
+            tail -n+__STUB_LINES__ "$0" | tar -xz -C "$jpaxa_APPLICATION_DIRECTORY"
+            rmdir "$jpaxa_LOCK"
             break
           fi
         done
         exec""";
 
         for (String cmdPart : command) {
-            String expanded = APP_PLACEHOLDER.matcher(cmdPart).replaceAll("\"\\$JPACKXA_APPLICATION_DIRECTORY\"");
+            String expanded = APP_PLACEHOLDER.matcher(cmdPart).replaceAll("\"\\$jpaxa_APPLICATION_DIRECTORY\"");
             stubScript += " \"" + expanded + "\"";
         }
         stubScript += " \"$@\"\n";
@@ -483,6 +492,9 @@ public class jpackxa implements Runnable {
     }
     
     private Path findStub(String stubName) {
+        if(!stubName.startsWith("stub-")) {
+            stubName = "stub-" + stubName;
+        }
         // Try current directory
         Path currentDir = Paths.get(".").resolve(stubName);
         if (exists(currentDir)) {
@@ -499,7 +511,7 @@ public class jpackxa implements Runnable {
         try {
             InputStream is = getClass().getResourceAsStream("/stubs/" + stubName);
             if (is != null) {
-                Path tempStub = Files.createTempFile("jpackxa-stub-", "");
+                Path tempStub = Files.createTempFile("jpaxa-stub-", "");
                 copy(is, tempStub, StandardCopyOption.REPLACE_EXISTING);
                 tempStub.toFile().deleteOnExit();
                 return tempStub;
@@ -535,5 +547,16 @@ public class jpackxa implements Runnable {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+    
+    private Map<String, String> getKnownVariants() {
+        Map<String, String> variants = new LinkedHashMap<>();
+        variants.put("win32-x64", "Windows (x64/AMD64)");
+        variants.put("darwin-x64", "macOS (Intel x64)");
+        variants.put("darwin-arm64", "macOS (Apple Silicon/ARM64)");
+        variants.put("linux-x64", "Linux (x64/AMD64)");
+        variants.put("linux-arm64", "Linux (ARM64/AArch64)");
+        variants.put("linux-arm", "Linux (ARM 32-bit)");
+        return variants;
     }
 }

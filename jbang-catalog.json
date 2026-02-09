@@ -1,7 +1,7 @@
 {
   "aliases": {
-    "jpackxa": {
-      "script-ref": "jpackxa.java"
+    "jpaxa": {
+      "script-ref": "jpaxa.java"
     }
   }
 }

@@ -10,10 +10,9 @@ anything jbang is capable of running.
    javac Hello.java
    ```
 
-2. Package it with jpackxa:
+2. Package it with jpaxa:
    ```bash
-   jpackxa .
-     -- "{{app}}/jbang" "env@jbangdev"
+   jpaxa . -- "{{app}}/jbang" "env@jbangdev"
    ```
 
 3. Run the packaged executable:
