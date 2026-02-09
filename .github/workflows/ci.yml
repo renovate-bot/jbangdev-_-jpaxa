@@ -102,10 +102,10 @@ jobs:
           mkdir -p dist
 
           jbang ./jpaxa.java \
-            examples/jpaxa-exec \
             --directory jpaxa-exec-dist \
             --output jpaxa-exec \
-            --variants all
+            --variants all \
+            examples/jpaxa-exec \
             -- "{{app}}/jbang"
 
           tar -czf jpaxa-exec-dist.tgz jpaxa-exec-dist
