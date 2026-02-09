@@ -68,6 +68,7 @@ jobs:
 
           test -f "dist/hello-windows-x86_64.exe"
           for v in osx-x86_64 osx-aarch64 linux-x86_64 linux-aarch_64 linux-arm; do
+            echo "Testing ${v}"
             test -f "dist/hello-${v}"
           done
 
