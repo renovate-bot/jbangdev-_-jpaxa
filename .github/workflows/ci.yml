@@ -23,6 +23,7 @@ jobs:
         run: |
          jreleaser assemble
          find build
+         unzip -l build/jpaxa/jpaxa.jar
 
       - name: Tar build (preserve permissions)
         shell: bash
