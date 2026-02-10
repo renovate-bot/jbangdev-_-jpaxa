@@ -90,9 +90,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar -xzf stubs.tgz
-          tar -xzf hello-dist.tgz
-          chmod +x dist/hello-${{ matrix.variant }} || true
+          tar -xzf build.tgz
           out="$(${{ matrix.run_cmd }})"
           echo "$out"
           echo "$out" | grep -F "Hello from packaged Java application!"
@@ -104,8 +102,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           tar -xzf stubs.tgz
-          tar -xzf hello-dist.tgz
-          $exe = "dist\hello-windows-x86_64.exe"
+          tar -xzf build.tgz
+          $exe = "build\jpaxa-output\jpaxa-windows-x86_64.exe"
           if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
           $outLines = & $exe CI
           $outText = ($outLines -join "`n")
