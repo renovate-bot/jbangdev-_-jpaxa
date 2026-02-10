@@ -77,26 +77,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v3
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up jbang
-        uses: jbangdev/setup-jbang@main
-
-      - name: Download stubs
+      - name: Download build
         uses: actions/download-artifact@v4
         with:
-          name: stubs-tgz
-          path: .
-
-      - name: Download hello
-        uses: actions/download-artifact@v4
-        with:
-          name: hello-dist-tgz
+          name: build-tgz
           path: .
 
       - name: Run packaged app (unix)

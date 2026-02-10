@@ -210,6 +210,8 @@ echo "CAXACAXACAXA" >> stubs/stub-linux-arm_32
    - A stub compiled for the target platform (can be cross-compiled with Go)
    - The application files (platform-specific if they contain native binaries)
 
+4. **Executable bits when building on Windows**: When you build jpaxa binaries on Windows that target Unix-like platforms (Linux/macOS), the packager cannot reliably infer POSIX executable bits from the Windows filesystem. In practice this means that inner files that need to be executable on Linux/macOS (for example the `jbang` wrapper) may lose their `+x` bit when extracted. For best results, build Unix-targeted jpaxa binaries on a Unix runner (Linux/macOS) so executable flags are preserved correctly.
+
 ### Recommended Approach
 
 1. **Build stubs once** for all platforms (using Go cross-compilation)

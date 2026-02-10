@@ -448,7 +448,12 @@ public class jpaxa implements Runnable {
                         if (isDirectory(source)) {
                             entry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
                         } else {
-                            entry.setMode(TarArchiveEntry.DEFAULT_FILE_MODE);
+                            // Preserve executability: if the source file is executable, mark it as such
+                            if (Files.isExecutable(source)) {
+                                entry.setMode(0755);
+                            } else {
+                                entry.setMode(TarArchiveEntry.DEFAULT_FILE_MODE);
+                            }
                             entry.setSize(Files.size(source));
                         }
                         
