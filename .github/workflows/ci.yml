@@ -19,6 +19,13 @@ jobs:
       - uses: actions/checkout@v6
       - uses: jdx/mise-action@v3
 
+      - name: Sanity check
+        run: | 
+          # Check that build folder does not exist. Fail if it does.
+          if [ -d build ]; then
+            echo "::error::build/ directory already exists. Please remove it (or run CI with a clean workspace)."
+            exit 1
+          fi
       - name: Assemble jpaxa
         run: |
          jreleaser assemble
@@ -42,7 +49,7 @@ jobs:
       - name: verify binary
         run: |
           build/jpaxa-output/jpaxa-linux-x86_64 verify
-          
+
   platform-matrix:
     name: Package + run on ${{ matrix.name }}
     needs: [variants-smoke]
