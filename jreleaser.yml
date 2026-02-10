@@ -1,5 +1,40 @@
+matrix:
+  rows:
+    - { goos: darwin,  goarch: amd64,  platform: osx-x86_64, ext: "" }
+    - { goos: darwin,  goarch: arm64,  platform: osx-aarch_64, ext: "" }
+    - { goos: linux,   goarch: amd64,  platform: linux-x86_64, ext: "" }
+    - { goos: linux,   goarch: arm64,  platform: linux-aarch_64, ext: "" }
+    - { goos: linux,   goarch: arm,    platform: linux-arm_32, ext: "" }
+    - { goos: windows, goarch: amd64, platform: windows-x86_64, ext: ".exe" }
+
+hooks:
+  script:
+    before:
+      - run: rm -f build/stubs/
+        filter:
+          includes: ['assemble']
+      - run: |
+          go build -o stubs/stub-{{matrix.platform}} stub.go
+          echo "{{matrix.goos}} {{matrix.goarch}} {{matrix.platform}}" >> build/stubs/platforms.txt
+        environment:
+          GOOS: "{{matrix.goos}}"
+          GOARCH: "{{matrix.goarch}}"
+          CGO_ENABLED: "0"
+        applyDefaultMatrix: true
+        filter:
+          includes: ['assemble']
+      - run: |
+              rm -rf examples/jpaxa
+              mkdir -p examples/jpaxa
+              jbang wrapper install -d examples/jpaxa
+              jbang export fatjar -O examples/jpaxa/jpaxa.jar --files=stubs/=stubs jpaxa.java
+              jbang examples/jpaxa/jpaxa.jar examples/jpaxa -- "{{app}}/jbang" "{{app}}/jpaxa.jar"
+        filter:
+          includes: ['assemble']
+          
 project:
   name: jpaxa
+  version: 999-SNAPSHOT
   description: A port of caxa to Java - a tool to package any runtime or script dependent applications into self-extracting executable binaries/bundles
   authors:
     - jbangdev
@@ -13,21 +48,14 @@ release:
   github:
     owner: jbangdev
     name: jpaxa
-
+     
 distributions:
   jpaxa:
     type: FLAT_BINARY
-    active: ALWAYS
-    artifacts:
-      - path: jpaxa-output/{{distributionName}}-{{platform}}
-        platform: osx-x86_64
-      - path: jpaxa-output/{{distributionName}}-{{platform}}
-        platform: osx-aarch64
-      - path: jpaxa-output/{{distributionName}}-{{platform}}
-        platform: linux-arm
-      - path: jpaxa-output/{{distributionName}}-{{platform}}
-        platform: linux-x86_64
-      - path: jpaxa-output/{{distributionName}}-{{platform}}.exe
-        platform: windows-x86_64
+    applyDefaultMatrix: true
+    artifactPattern:
+      path: 'jpaxa-output/{{distributionName}}-{{matrix.platform}}{{matrix.ext}}'
+
+
 
 

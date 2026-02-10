@@ -2,7 +2,8 @@
 //DEPS org.apache.commons:commons-compress:1.21
 //DEPS info.picocli:picocli:4.7.5
 //DEPS com.google.code.gson:gson:2.10.1
-//FILES platforms.txt
+//need to have run jreleaser hooks to generate stubs/platforms.txt
+///FILES build/stubs/platforms.txt
 //JAVA 17+
 
 import static java.nio.file.Files.copy;
@@ -37,7 +38,7 @@ public class jpaxa implements Runnable {
     @Option(names = {"-o", "--output"}, description = "The name of the executable to be produced, if relative will be relative to the build directory")
     private Path output;
 
-    @Option(names = {"-d", "--directory"}, description = "The path where the executable will be produced", defaultValue = "jpaxa-output")
+    @Option(names = {"-d", "--directory"}, description = "The path where the executable will be produced", defaultValue = "build/jpaxa-output")
     private Path build;
 
     
@@ -493,20 +494,28 @@ public class jpaxa implements Runnable {
         }
     }
     
+    /** 
+     * Searches for stubs in the following sequence:
+     * 
+     * 1. Current directory
+     * 2. stubs directory
+     * 3. build/stubs directory
+     * 4. resources (if packaged as JAR)
+     */
     private Path findStub(String stubName) {
         if(!stubName.startsWith("stub-")) {
             stubName = "stub-" + stubName;
         }
-        // Try current directory
-        Path currentDir = Paths.get(".").resolve(stubName);
-        if (exists(currentDir)) {
-            return currentDir;
-        }
-        
-        // Try stubs directory
-        Path stubsDir = Paths.get("stubs").resolve(stubName);
-        if (exists(stubsDir)) {
-            return stubsDir;
+        // Check a list of possible stub locations in order and return the first one that exists
+        List<Path> candidatePaths = Arrays.asList(
+            Paths.get(".", stubName),
+            Paths.get("stubs", stubName),
+            Paths.get("build/stubs", stubName)
+        );
+        for (Path path : candidatePaths) {
+            if (exists(path)) {
+                return path;
+            }
         }
         
         // Try in resources (if packaged as JAR)
@@ -528,7 +537,7 @@ public class jpaxa implements Runnable {
     private String getPlatform() {
         String osName = System.getProperty("os.name").toLowerCase();
         if (osName.contains("win")) return "windows";
-        if (osName.contains("mac")) return "darwin";
+        if (osName.contains("mac")) return "osx";
         if (osName.contains("nix") || osName.contains("nux")) return "linux";
         return "unknown";
     }
@@ -536,7 +545,7 @@ public class jpaxa implements Runnable {
     private String getArchitecture() {
         String arch = System.getProperty("os.arch").toLowerCase();
         if (arch.contains("amd64") || arch.contains("x86_64")) return "x86_64";
-        if (arch.contains("aarch64") || arch.contains("arm64")) return "aarch64";
+        if (arch.contains("aarch64") || arch.contains("arm64")) return "aarch_64";
         if (arch.contains("arm")) return "arm";
         return "unknown";
     }
@@ -555,15 +564,9 @@ public class jpaxa implements Runnable {
         Map<String, String> variants = new LinkedHashMap<>();
         try {
             InputStream is = getClass().getResourceAsStream("/platforms.txt");
-            if (is == null) {
-                // Fallback to hardcoded if resource not found
-                variants.put("windows-x86_64", "Windows (x64/AMD64)");
-                variants.put("darwin-x86_64", "macOS (Intel x64)");
-                variants.put("darwin-aarch64", "macOS (Apple Silicon/ARM64)");
-                variants.put("linux-x86_64", "Linux (x64/AMD64)");
-                variants.put("linux-aarch64", "Linux (ARM64/AArch64)");
-                variants.put("linux-arm", "Linux (ARM)");
-                return variants;
+            if(is == null) {
+                System.err.println("Platforms file not found, zero no known variants will be available");
+                return new HashMap<>();
             }
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
@@ -573,34 +576,15 @@ public class jpaxa implements Runnable {
                     String[] parts = line.split("\\s+");
                     if (parts.length >= 3) {
                         String suffix = parts[2];
-                        String description = getVariantDescription(suffix);
+                        String description = suffix;
                         variants.put(suffix, description);
                     }
                 }
             }
         } catch (IOException e) {
-            // Fallback to hardcoded if reading fails
-            variants.put("windows-x86_64", "Windows (x64/AMD64)");
-            variants.put("darwin-x86_64", "macOS (Intel x64)");
-            variants.put("darwin-aarch64", "macOS (Apple Silicon/ARM64)");
-            variants.put("linux-x86_64", "Linux (x64/AMD64)");
-            variants.put("linux-aarch64", "Linux (ARM64/AArch64)");
-            variants.put("linux-arm", "Linux (ARM)");
+            System.err.println("Error reading platforms file: " + e.getMessage());
+            return new HashMap<>();
         }
         return variants;
-    }
-    
-    private String getVariantDescription(String suffix) {
-        if (suffix.startsWith("windows-")) return "Windows (" + suffix.substring(8).replace("_", "/") + ")";
-        if (suffix.startsWith("darwin-")) {
-            if (suffix.contains("aarch64")) return "macOS (Apple Silicon/ARM64)";
-            return "macOS (Intel x64)";
-        }
-        if (suffix.startsWith("linux-")) {
-            if (suffix.contains("aarch64")) return "Linux (ARM64/AArch64)";
-            if (suffix.contains("arm")) return "Linux (ARM)";
-            return "Linux (x64/AMD64)";
-        }
-        return suffix;
     }
 }

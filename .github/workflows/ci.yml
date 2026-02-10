@@ -67,7 +67,7 @@ jobs:
             -- "java" "-cp" "{{app}}" "Hello"
 
           test -f "dist/hello-windows-x86_64.exe"
-          for v in osx-x86_64 osx-aarch64 linux-x86_64 linux-aarch_64 linux-arm; do
+          for v in osx-x86_64 osx-aarch_64 linux-x86_64 linux-aarch_64 linux-arm_32; do
             echo "Testing ${v}"
             test -f "dist/hello-${v}"
           done
@@ -135,9 +135,9 @@ jobs:
           # remove this entry.
           #- name: linux-arm64
           #  runs_on: ubuntu-24.04-arm64
-          #  variant: linux-aarch64
+          #  variant: linux-aarch_64
           #  output: hello
-          #  run_cmd: ./dist/hello-linux-aarch64 CI
+          #  run_cmd: ./dist/hello-linux-aarch_64 CI
 
           - name: macos-x64
             runs_on: macos-15-intel
@@ -147,9 +147,9 @@ jobs:
 
           - name: macos-arm64
             runs_on: macos-latest
-            variant: osx-aarch64
+            variant: osx-aarch_64
             output: hello
-            run_cmd: ./dist/hello-osx-aarch64 CI
+            run_cmd: ./dist/hello-osx-aarch_64 CI
 
           - name: windows-x64
             runs_on: windows-latest
