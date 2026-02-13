@@ -118,8 +118,8 @@ jobs:
           tar -xzf build.tgz
           $exe = "build\jpaxa-output\jpaxa-windows-x86_64.exe"
           if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
-          $outLines = & $exe verify
+          $outLines = & $exe verify 2>&1
           $outText = ($outLines -join "`n")
           Write-Host $outText
-          if ($outText -notmatch "Verifying stubs for 6 platform(s)") { throw "Missing expected greeting" }
-
+          if ($outText -notlike "*Verifying stubs for 6 platform(s)*") { throw "Missing expected greeting" }
+ 
