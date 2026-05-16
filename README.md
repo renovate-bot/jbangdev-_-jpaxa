@@ -83,6 +83,8 @@ jpaxa \
   -- "python3" "{{jpaxa}}/main.py"
 ```
 
+If the target machine does not have Python installed, bundle a Python runtime inside the input directory and launch that bundled interpreter instead. See [Self-contained Python](#self-contained-python).
+
 ## Install
 
 ### Using JBang
@@ -193,6 +195,75 @@ Use `jpaxa` when you want:
 `jpaxa` can package Java applications well, but it does **not** make Java magically become a single in-memory executable. The packaged app is still extracted to disk before launch because current JDKs expect normal files and directories.
 
 If you are interested in a future where Java apps can run from a fully self-contained packaged image without file extraction, see the OpenJDK [Hermetic Java proposal](https://cr.openjdk.org/~jiangli/hermetic_java.pdf).
+
+## Self-contained Python
+
+`jpaxa` can make a Python application feel self-contained to the end user, but only if you bundle the Python runtime inside the input directory before packaging.
+
+In other words:
+
+- `jpaxa` can package a Python interpreter plus your app into one executable
+- `jpaxa` does **not** itself provide or build the Python runtime
+- you must prepare a platform-specific Python bundle first
+
+### What this means in practice
+
+If the target machine already has Python installed, this is enough:
+
+```bash
+jpaxa \
+  --input my-python-app \
+  --output my-python-app \
+  -- "python3" "{{jpaxa}}/main.py"
+```
+
+If the target machine does **not** have Python installed, package a directory that already contains:
+
+- a Python interpreter
+- your application code
+- any required packages or virtual environment contents
+
+Then launch the bundled interpreter.
+
+### Example layout
+
+```text
+my-python-bundle/
+  python/
+    bin/python3
+  app/
+    main.py
+```
+
+### macOS / Linux example
+
+```bash
+jpaxa \
+  --input my-python-bundle \
+  --output my-tool \
+  -- "{{jpaxa}}/python/bin/python3" "{{jpaxa}}/app/main.py"
+```
+
+### Windows example
+
+```bash
+jpaxa \
+  --input my-python-bundle \
+  --output my-tool.exe \
+  -- "{{jpaxa}}/python/python.exe" "{{jpaxa}}/app/main.py"
+```
+
+### Important limitation
+
+A self-contained Python bundle is still platform-specific.
+
+That means you generally need separate bundled runtimes for:
+
+- Windows
+- macOS
+- Linux
+
+If your app uses native extensions or platform-specific wheels, those must also match the target platform.
 
 ## Platform notes
 
