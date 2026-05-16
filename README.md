@@ -42,7 +42,7 @@ Use `jpaxa` when you want to:
 - optimized for the absolute fastest first startup
 - a way to run Java fully in-memory without unpacking files
 
-For Java specifically, today's JDKs still expect files on disk. If that changes in the future, the OpenJDK [Hermetic Java proposal](https://cr.openjdk.org/~jiangli/hermetic_java.pdf) is the thing to watch.
+For Java specifically, today's JDKs still expect files on disk.
 
 ## 30-second examples
 
@@ -304,8 +304,8 @@ See the `examples/` directory for sample applications.
 
 ## License
 
-MIT (same as original jpaxa)
+MIT
 
 ## Acknowledgments
 
-This is a Java port of [jpaxa](https://github.com/leafac/jpaxa) by Leandro Facchinetti. The Go stub code is from the original jpaxa project.
+This project is inspired by [caxa](https://github.com/leafac/caxa/tree/63f28fb7a1e62e9f08edd1a9f697e0ac5b7ecb85) by Leandro Facchinetti. The Go stub approach comes from that original project lineage.
