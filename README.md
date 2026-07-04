@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="jpaxa.png" alt="jpaxa" width="600">
+</p>
+
 # jpaxa
 
 Turn an application directory plus a startup command into a **single self-extracting executable**.
