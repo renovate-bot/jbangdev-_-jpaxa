@@ -63,13 +63,13 @@ release:
 files:
   artifacts:
     - path: build/jpaxa/jpaxa.jar
+    - path: build/jpaxa-output/jpaxa-osx-x86_64
+    - path: build/jpaxa-output/jpaxa-osx-aarch_64
+    - path: build/jpaxa-output/jpaxa-linux-x86_64
+    - path: build/jpaxa-output/jpaxa-linux-aarch_64
+    - path: build/jpaxa-output/jpaxa-linux-arm_32
+    - path: build/jpaxa-output/jpaxa-windows-x86_64.exe
 
-distributions:
-  jpaxa:
-    type: FLAT_BINARY
-    applyDefaultMatrix: true
-    artifactPattern:
-      path: 'build/jpaxa-output/{{distributionName}}-{{matrix.platform}}{{matrix.ext}}'
 
 
 
