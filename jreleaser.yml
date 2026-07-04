@@ -45,18 +45,31 @@ project:
   links:
     homepage: https://github.com/jbangdev/jpaxa
     documentation: https://github.com/jbangdev/jpaxa#readme
+  snapshot:
+    label: early-access
+    fullChangelog: true
 
 release:
   github:
     owner: jbangdev
     name: jpaxa
-     
+    overwrite: true
+    changelog:
+      formatted: ALWAYS
+      preset: conventional-commits
+      contributors:
+        enabled: false
+
+files:
+  artifacts:
+    - path: build/jpaxa/jpaxa.jar
+
 distributions:
   jpaxa:
     type: FLAT_BINARY
     applyDefaultMatrix: true
     artifactPattern:
-      path: 'jpaxa-output/{{distributionName}}-{{matrix.platform}}{{matrix.ext}}'
+      path: 'build/jpaxa-output/{{distributionName}}-{{matrix.platform}}{{matrix.ext}}'
 
 
 

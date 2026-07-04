@@ -5,7 +5,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -122,4 +122,29 @@ jobs:
           $outText = ($outLines -join "`n")
           Write-Host $outText
           if ($outText -notlike "*Verifying stubs for 6 platform(s)*") { throw "Missing expected greeting" }
- 
+
+  earlyaccess:
+    name: Early-access release
+    needs: [variants-smoke, platform-matrix]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+
+      - name: Download build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: build-tgz
+          path: .
+
+      - name: Extract build
+        run: tar -xzf build.tgz
+
+      - name: Release
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: jreleaser release --git-root-search
